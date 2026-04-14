@@ -83,7 +83,7 @@ int countAliveNeighbours(int i, int j) {
             count += grid[x][y];
         }
     }
-    count -= grid[i][j];
+    count -= grid[i][j]; 
     return count;
 }
 
@@ -102,7 +102,7 @@ void updateGrid() {
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
             int count = countAliveNeighbours(i, j);
-            newGrid[i][j] = (grid[i][j] == 1) ? (count == 2 || count == 3) : (count == 3);
+            newGrid[i][j] = (grid[i][j] == 1) ? (count == 2 || count == 3) : (count == 3); // Si la celda está viva, permanece viva si tiene 2 o 3 vecinos vivos; de lo contrario, muere. Si la celda está muerta, se vuelve viva si tiene exactamente 3 vecinos vivos; de lo contrario, permanece muerta.
         }
     }
     for (int i = 0; i < HEIGHT; i++) {
