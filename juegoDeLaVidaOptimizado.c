@@ -18,9 +18,9 @@
  *     | |) | _|| _| | || .` | _| 
  *     |___/|___|_| |___|_|\_|___|          */
 // Dimensiones y parámetros
-#define WIDTH 30
-#define HEIGHT 10
-#define ITERATION 10
+#define WIDTH 1000
+#define HEIGHT 1000
+#define ITERATION 500
 #define SPEED 500
 #define ALIVE '#'
 #define DEAD '.'
@@ -101,16 +101,17 @@ int countAliveNeighbours(int i, int j) {
 void updateGrid() {
     uint8_t newGrid[HEIGHT][WIDTH];
 
-#if defined(_OPENMP)
-#pragma omp parallel for schedule(static)
+#if defined(_OPENMP) /*REALMENTE SI TENEMOS SEPARADOS LOS ARCHIVOS EN SECUENCIAL Y OPTIMIZADO ESTO NO HACE FALTA*/
+#pragma omp parallel for default(none) shared(grid, newGrid) schedule(static)
 #endif
     for (int i = 0; i < HEIGHT; i++) {
+        #pragma omp simd
         for (int j = 0; j < WIDTH; j++) {
             int count = countAliveNeighbours(i, j);
             newGrid[i][j] = (grid[i][j] == 1) ? ((count == 2 || count == 3) ? 1 : 0) : (count == 3);
         }
     }
-
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
             grid[i][j] = newGrid[i][j];
@@ -127,13 +128,34 @@ void updateGrid() {
  * la visualización y la espera para medir el rendimiento real.
  */
 int main() {
-    srand(time(NULL));
+    srand(42);
     initGrid();
+
 #ifdef BENCHMARK
-    // Modo benchmark: solo ejecutar las actualizaciones (sin IO)
+    #ifdef _OPENMP
+    #pragma omp parallel
+    {
+        #pragma omp single
+        printf("Numero de hilos: %d\n", omp_get_num_threads());
+    }
+
+    double t1 = omp_get_wtime();
+    #else
+    double t1 = (double)clock() / CLOCKS_PER_SEC;
+    #endif
+
     for (int it = 0; it < ITERATION; ++it) {
         updateGrid();
     }
+
+    #ifdef _OPENMP
+    double t2 = omp_get_wtime();
+    #else
+    double t2 = (double)clock() / CLOCKS_PER_SEC;
+    #endif
+
+    printf("Tiempo de ejecucion: %f segundos\n", t2 - t1);
+
 #else
     for (int i = 0; i < ITERATION; i++) {
         printGrid();
@@ -141,5 +163,6 @@ int main() {
         usleep(SPEED * 1000);
     }
 #endif
+
     return 0;
 }
