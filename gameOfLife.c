@@ -6,15 +6,16 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <omp.h>
 
 
 /***    ___  ___ ___ ___ _  _ ___ 
  *     |   \| __| __|_ _| \| | __|
  *     | |) | _|| _| | || .` | _| 
  *     |___/|___|_| |___|_|\_|___|          */
-#define WIDTH 30
-#define HEIGHT 10
-#define ITERATION 10
+#define WIDTH 1000
+#define HEIGHT 1000
+#define ITERATION 500
 #define SPEED 500
 #define ALIVE '#'
 #define DEAD '.'
@@ -120,13 +121,21 @@ void updateGrid() {
  * grid and updating it each time. The usleep() call is used to slow down
  * the iteration.
  */
+
 int main() {
-    srand(time(NULL));
+
+    srand(42);
     initGrid();
+
+    double t1 = omp_get_wtime();
+
     for (int i = 0; i < ITERATION; i++) {
-        printGrid();
         updateGrid();
-        usleep(SPEED * 1000);
     }
+
+    double t2 = omp_get_wtime();
+
+    printf("Tiempo OpenMP: %f segundos\n", t2 - t1);
+
     return 0;
 }
