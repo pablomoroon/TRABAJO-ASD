@@ -123,10 +123,10 @@ void updateGrid() {
  */
 
 int main() {
-
     srand(42);
     initGrid();
 
+#ifdef BENCHMARK
     double t1 = omp_get_wtime();
 
     for (int i = 0; i < ITERATION; i++) {
@@ -136,6 +136,13 @@ int main() {
     double t2 = omp_get_wtime();
 
     printf("Tiempo OpenMP: %f segundos\n", t2 - t1);
+#else
+    for (int i = 0; i < ITERATION; i++) {
+        printGrid();
+        updateGrid();
+        usleep(SPEED * 1000);
+    }
+#endif
 
     return 0;
 }
