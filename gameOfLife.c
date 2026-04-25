@@ -49,7 +49,7 @@ void initGrid() {
  */
 void printGrid() {
     system("clear");
-    //system("cls"); //PARA COMPILAR EN LINUX
+    //system("cls"); //PARA COMPILAR EN Windows
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
             printf("%c", grid[i][j] ? ALIVE : DEAD);
