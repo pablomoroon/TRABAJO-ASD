@@ -20,7 +20,7 @@
 // Dimensiones y parámetros
 #define WIDTH 1000
 #define HEIGHT 1000
-#define ITERATION 500
+#define ITERATION 100
 #define SPEED 500
 #define ALIVE '#'
 #define DEAD '.'
