@@ -26,9 +26,8 @@
 #define ALIVE '#'
 #define DEAD '.'
 
-
 // Rejilla: 0 = muerto, 1 = vivo (usar uint8_t mejora locality/casts)
-static uint8_t global_grid[HEIGHT][WIDTH];
+static uint8_t grid[HEIGHT][WIDTH];
 int generation = 0;
 
 /**
@@ -40,7 +39,7 @@ int generation = 0;
 void initGrid() {
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            global_grid[i][j] = rand() & 1; // faster equivalence a rand()%2
+            grid[i][j] = rand() & 1; // faster equivalence a rand()%2
         }
     }
 }
@@ -57,7 +56,7 @@ void printGrid() {
     //system("cls"); //PARA COMPILAR EN LINUX
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            printf("%c", global_grid[i][j] ? ALIVE : DEAD);
+            printf("%c", grid[i][j] ? ALIVE : DEAD);
         }
         printf("\n");
     }
@@ -74,24 +73,24 @@ void printGrid() {
  * @param j Columna de la celda.
  * @return Número de vecinos vivos.
  */
-int countAliveNeighbours(const uint8_t local[][WIDTH],
-        const uint8_t halo_top[WIDTH],
-        const uint8_t halo_bottom[WIDTH],
-        int local_rows,
-        int i, int j){
+static inline int countAliveNeighbours(int i, int j) {
+    int count = 0;
 
-    int jm1 = (j == 0) ? WIDTH - 1 : j - 1; // columna anterior (wrap-around)
-    int jp1 = (j == WIDTH - 1) ? 0 : j + 1; // columna siguiente (wrap-around)
+    int im1 = (i == 0) ? HEIGHT - 1 : i - 1;
+    int ip1 = (i == HEIGHT - 1) ? 0 : i + 1;
+    int jm1 = (j == 0) ? WIDTH - 1 : j - 1;
+    int jp1 = (j == WIDTH - 1) ? 0 : j + 1;
 
-    /* Fila superior: si i==0 usamos halo_top, si no la fila i-1 local */
-    const uint8_t *row_above = (i == 0)             ? halo_top    : local[i - 1];
-    /* Fila inferior: si es la última usamos halo_bottom, si no i+1 local */
-    const uint8_t *row_below = (i == local_rows - 1) ? halo_bottom : local[i + 1];
-    const uint8_t *row_cur   = local[i];
+    count += grid[im1][jm1];
+    count += grid[im1][j];
+    count += grid[im1][jp1];
+    count += grid[i][jm1];
+    count += grid[i][jp1];
+    count += grid[ip1][jm1];
+    count += grid[ip1][j];
+    count += grid[ip1][jp1];
 
-    return row_above[jm1] + row_above[j]   + row_above[jp1]
-         + row_cur[jm1]                    + row_cur[jp1]
-         + row_below[jm1] + row_below[j]   + row_below[jp1];//row above[jm1] es el vecino de arriba a la izquierda, row above[j] el vecino de arriba, row above[jp1] el vecino de arriba a la derecha, row_cur[jm1] el vecino de la izquierda, row_cur[jp1] el vecino de la derecha, row_below[jm1] el vecino de abajo a la izquierda, row_below[j] el vecino de abajo, row_below[jp1] el vecino de abajo a la derecha
+    return count;
 }
 
 /**
@@ -101,27 +100,116 @@ int countAliveNeighbours(const uint8_t local[][WIDTH],
  * para cada celda y copia el resultado de vuelta. Contiene una
  * directiva OpenMP opcional para paralelizar por filas.
  */
-void updateRows(
-        uint8_t local[][WIDTH],
-        uint8_t new_local[][WIDTH],
-        const uint8_t halo_top[WIDTH],
-        const uint8_t halo_bottom[WIDTH],
-        int local_rows,
-        int row_start,
-        int row_end)
-{
-    /* OpenMP paraleliza el bucle de filas si está disponible */
-    #ifdef _OPENMP
-    #pragma omp parallel for schedule(static)
-    #endif
-    for (int i = row_start; i < row_end; i++) {
-        for (int j = 0; j < WIDTH; j++) {
-            int n = countAliveNeighbours(local, halo_top, halo_bottom,
-                                    local_rows, i, j);
-            new_local[i][j] = (local[i][j])
-                              ? (n == 2 || n == 3)
-                              : (n == 3);
+
+
+void updateGridMPI() {
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    int filas = HEIGHT / size;
+
+    uint8_t localGrid[filas + 2][WIDTH];
+    uint8_t newLocalGrid[filas + 2][WIDTH];
+
+    MPI_Status status;
+
+    // Aqui si rank == 0, cada proceso recibe su parte de la rejilla global
+    if (rank == 0) {
+        for (int p = 1; p < size; p++) {
+            MPI_Send(&grid[p * filas][0], filas * WIDTH, MPI_UNSIGNED_CHAR, p, 0, MPI_COMM_WORLD);
         }
+        for (int i = 0; i < filas; i++)
+            for (int j = 0; j < WIDTH; j++)
+                localGrid[i + 1][j] = grid[i][j];
+    } else {
+        MPI_Recv(&localGrid[1][0], filas * WIDTH, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, &status);
+    }
+
+    // Aqui se hace el intercambio de filas frontera entre procesos 
+    int up = (rank == 0) ? size - 1 : rank - 1; // vecino de arriba 
+    int down = (rank == size - 1) ? 0 : rank + 1; // vecino de abajo 
+
+    MPI_Send(&localGrid[1][0], WIDTH, MPI_UNSIGNED_CHAR, up, 1, MPI_COMM_WORLD); // enviar fila superior a vecino de arriba
+    MPI_Recv(&localGrid[filas + 1][0], WIDTH, MPI_UNSIGNED_CHAR, down, 1, MPI_COMM_WORLD, &status); // recibir fila inferior de vecino de abajo
+
+    MPI_Send(&localGrid[filas][0], WIDTH, MPI_UNSIGNED_CHAR, down, 2, MPI_COMM_WORLD); // enviar fila inferior a vecino de abajo
+    MPI_Recv(&localGrid[0][0], WIDTH, MPI_UNSIGNED_CHAR, up, 2, MPI_COMM_WORLD, &status); // recibir fila superior de vecino de arriba
+
+    // 🔹 3. COMPUTO LOCAL → AQUÍ VA TU OPTIMIZACIÓN
+#if defined(_OPENMP)
+#pragma omp parallel for default(none) shared(localGrid, newLocalGrid) schedule(static)
+#endif
+    for (int i = 1; i <= filas; i++) {
+
+        int j;
+
+        // 🔥 DESENROLLADO (igual que tu código)
+        for (j = 0; j < WIDTH - 1; j += 2) {
+
+            int im1 = i - 1;
+            int ip1 = i + 1;
+
+            int jm1 = (j == 0) ? WIDTH - 1 : j - 1;
+            int jp1 = (j == WIDTH - 1) ? 0 : j + 1;
+
+            int count1 =
+                localGrid[im1][jm1] + localGrid[im1][j] + localGrid[im1][jp1] +
+                localGrid[i][jm1]   +                     localGrid[i][jp1] +
+                localGrid[ip1][jm1] + localGrid[ip1][j] + localGrid[ip1][jp1];
+
+            newLocalGrid[i][j] =
+                (localGrid[i][j] == 1)
+                ? ((count1 == 2 || count1 == 3) ? 1 : 0)
+                : (count1 == 3);
+
+            // Segunda celda (desenrollado)
+            int jm1_2 = (j + 1 == 0) ? WIDTH - 1 : j;
+            int jp1_2 = (j + 1 == WIDTH - 1) ? 0 : j + 2;
+
+            int count2 =
+                localGrid[im1][jm1_2] + localGrid[im1][j + 1] + localGrid[im1][jp1_2] +
+                localGrid[i][jm1_2]   +                        localGrid[i][jp1_2] +
+                localGrid[ip1][jm1_2] + localGrid[ip1][j + 1] + localGrid[ip1][jp1_2];
+
+            newLocalGrid[i][j + 1] =
+                (localGrid[i][j + 1] == 1)
+                ? ((count2 == 2 || count2 == 3) ? 1 : 0)
+                : (count2 == 3);
+        }
+
+        // resto
+        for (; j < WIDTH; j++) {
+
+            int im1 = i - 1;
+            int ip1 = i + 1;
+
+            int jm1 = (j == 0) ? WIDTH - 1 : j - 1;
+            int jp1 = (j == WIDTH - 1) ? 0 : j + 1;
+
+            int count =
+                localGrid[im1][jm1] + localGrid[im1][j] + localGrid[im1][jp1] +
+                localGrid[i][jm1]   +                     localGrid[i][jp1] +
+                localGrid[ip1][jm1] + localGrid[ip1][j] + localGrid[ip1][jp1];
+
+            newLocalGrid[i][j] =
+                (localGrid[i][j] == 1)
+                ? ((count == 2 || count == 3) ? 1 : 0)
+                : (count == 3);
+        }
+    }
+
+    // 🔹 4. Recolección
+    if (rank == 0) {
+        for (int i = 0; i < filas; i++)
+            for (int j = 0; j < WIDTH; j++)
+                grid[i][j] = newLocalGrid[i + 1][j];
+
+        for (int p = 1; p < size; p++) {
+            MPI_Recv(&grid[p * filas][0], filas * WIDTH, MPI_UNSIGNED_CHAR, p, 3, MPI_COMM_WORLD, &status);
+        }
+    } else {
+        MPI_Send(&newLocalGrid[1][0], filas * WIDTH, MPI_UNSIGNED_CHAR, 0, 3, MPI_COMM_WORLD);
     }
 }
 
@@ -134,138 +222,43 @@ void updateRows(
  * la visualización y la espera para medir el rendimiento real.
  */
 int main(int argc, char *argv[]) {
-    int rank, size;
-
     MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    if (HEIGHT % size != 0) {
-        if (rank == 0)
-            fprintf(stderr, "Error: HEIGHT (%d) debe ser divisible por np (%d)\n",
-                    HEIGHT, size);
-        MPI_Finalize();
-        return 1;
+    srand(42);
+    initGrid();
+
+#ifdef BENCHMARK
+    #ifdef _OPENMP
+    #pragma omp parallel
+    {
+        #pragma omp single
+        printf("Numero de hilos: %d\n", omp_get_num_threads());
     }
 
-    int local_rows = HEIGHT / size;
+    double t1 = omp_get_wtime();
+    #else
+    double t1 = (double)clock() / CLOCKS_PER_SEC;
+    #endif
 
-    /* Reserva dinámica de los buffers locales */
-    uint8_t (*local)[WIDTH]     = malloc(local_rows * WIDTH * sizeof(uint8_t)); //local es un puntero a un array de anchura (width) WIDTH, con local_rows filas. Es decir, local[i][j] es el elemento de la fila i y columna j del bloque local de este proceso.
-    uint8_t (*new_local)[WIDTH] = malloc(local_rows * WIDTH * sizeof(uint8_t)); //new_local es otro bloque local para almacenar la siguiente generación, con la misma estructura que local.
-    uint8_t *halo_top           = malloc(WIDTH * sizeof(uint8_t)); //halo_top es un array de WIDTH elementos que almacena la fila fantasma superior, que corresponde a la última fila del proceso anterior en el anillo.
-    uint8_t *halo_bottom        = malloc(WIDTH * sizeof(uint8_t)); //halo_bottom es otro array de WIDTH elementos que almacena la fila fantasma inferior, que corresponde a la primera fila del proceso siguiente en el anillo.
-
-     /* ── Solo rank 0 inicializa la rejilla completa ──────────────── */
-    if (rank == 0) {
-        srand(42);
-        initGrid();
+    for (int it = 0; it < ITERATION; ++it) {
+        updateGridMPI();
     }
 
+    #ifdef _OPENMP
+    double t2 = omp_get_wtime();
+    #else
+    double t2 = (double)clock() / CLOCKS_PER_SEC;
+    #endif
 
-    MPI_Scatter(
-        global_grid, local_rows * WIDTH, MPI_UINT8_T,
-        local,       local_rows * WIDTH, MPI_UINT8_T,
-        0, MPI_COMM_WORLD
-    );
+    printf("Tiempo de ejecucion: %f segundos\n", t2 - t1);
 
-    /* ── Información de configuración (rank 0) ───────────────────── */
-    if (rank == 0) {
-        printf("Configuracion:\n");
-        printf("  Tablero: %dx%d, Iteraciones: %d\n", WIDTH, HEIGHT, ITERATION);
-        printf("  Procesos MPI: %d, Filas por proceso: %d\n", size, local_rows);
-        #ifdef _OPENMP
-        printf("  Hilos OpenMP por proceso: %d\n", omp_get_max_threads());
-        #endif
+#else
+    for (int i = 0; i < ITERATION; i++) {
+        printGrid();
+        updateGridMPI();
+        usleep(SPEED * 1000);
     }
-
-    int prev_rank = (rank - 1 + size) % size;
-    int next_rank = (rank + 1)        % size;
-
-    double t_start = MPI_Wtime();
-
-    for (int it = 0; it < ITERATION; it++) {
-        MPI_Request reqs[4];
-
-        /* Recibir halo_top desde prev_rank (él nos manda su última fila) */
-        MPI_Irecv(halo_top,    WIDTH, MPI_UINT8_T,
-                  prev_rank, 1, MPI_COMM_WORLD, &reqs[0]);
-
-        /* Recibir halo_bottom desde next_rank (él nos manda su primera fila) */
-        MPI_Irecv(halo_bottom, WIDTH, MPI_UINT8_T,
-                  next_rank, 0, MPI_COMM_WORLD, &reqs[1]);
-
-        /* Enviar nuestra primera fila a prev_rank (para su halo_bottom) */
-        MPI_Isend(local[0],             WIDTH, MPI_UINT8_T,
-                  prev_rank, 0, MPI_COMM_WORLD, &reqs[2]);
-
-        /* Enviar nuestra última fila a next_rank (para su halo_top) */
-        MPI_Isend(local[local_rows - 1], WIDTH, MPI_UINT8_T,
-                  next_rank, 1, MPI_COMM_WORLD, &reqs[3]);
-
-        if (local_rows > 2) {
-            updateRows(local, new_local,
-                       halo_top, halo_bottom,   /* no se usan aquí, pero se pasan */
-                       local_rows,
-                       1, local_rows - 1);      /* filas interiores */
-        }
-
-        /* ── Esperar a que lleguen los halos ─────────────────────── */
-        MPI_Waitall(4, reqs, MPI_STATUSES_IGNORE);
-
-        /* ── Calcular filas frontera (ahora sí tenemos los halos) ── */
-        updateRows(local, new_local,
-                   halo_top, halo_bottom,
-                   local_rows,
-                   0, 1);                       /* primera fila */
-
-        if (local_rows > 1)
-            updateRows(local, new_local,
-                       halo_top, halo_bottom,
-                       local_rows,
-                       local_rows - 1, local_rows); /* última fila */
-        
-    uint8_t (*tmp)[WIDTH] = local;
-        local     = new_local;
-        new_local = tmp;
-
-    } /* fin del bucle de iteraciones */
-
-    double t_end = MPI_Wtime();
-
-    MPI_Gather(
-        local,       local_rows * WIDTH, MPI_UINT8_T,
-        global_grid, local_rows * WIDTH, MPI_UINT8_T,
-        0, MPI_COMM_WORLD
-    );
-
-    double local_time = t_end - t_start;
-    double max_time;
-
-    MPI_Reduce(&local_time, &max_time, 1, MPI_DOUBLE,
-               MPI_MAX, 0, MPI_COMM_WORLD);
-
-    if (rank == 0) {
-        printf("\nTiempo de ejecucion (proceso mas lento): %.6f segundos\n", max_time);
-        printf("Throughput: %.2f Mceldas/s\n",
-               (double)WIDTH * HEIGHT * ITERATION / max_time / 1e6);
-
-        #ifndef BENCHMARK
-        /* Opcional: imprimir las últimas 10 filas del tablero final */
-        printf("\nUltimas 5 filas del tablero final:\n");
-        for (int i = HEIGHT - 5; i < HEIGHT; i++) {
-            for (int j = 0; j < (WIDTH < 80 ? WIDTH : 80); j++)
-                putchar(global_grid[i][j] ? '#' : '.');
-            printf(WIDTH > 80 ? "...\n" : "\n");
-        }
-        #endif
-    }
-
-    /* ── Liberación de memoria ───────────────────────────────────── */
-    free(local);
-    free(new_local);
-    free(halo_top);
-    free(halo_bottom);
+#endif
 
     MPI_Finalize();
     return 0;
