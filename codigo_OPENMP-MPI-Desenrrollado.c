@@ -139,7 +139,7 @@ void updateGridMPI() {
 
     // COMPUTO LOCAL Aqui se calcula el siguiente estado para cada celda del bloque local
 #if defined(_OPENMP)
-#pragma omp parallel for default(none) shared(localGrid, newLocalGrid) schedule(static)
+#pragma omp parallel for default(none) shared(localGrid, newLocalGrid, filas) schedule(static)
 #endif
     for (int i = 1; i <= filas; i++) {
 
