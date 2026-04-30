@@ -1,7 +1,3 @@
-/***    ___ _  _  ___ _   _   _ ___  ___ 
- *     |_ _| \| |/ __| | | | | |   \| __|
- *      | || .` | (__| |_| |_| | |) | _| 
- *     |___|_|\_|\___|____\___/|___/|___|   */
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -14,10 +10,6 @@
 #endif
 
 
-/***    ___  ___ ___ ___ _  _ ___ 
- *     |   \| __| __|_ _| \| | __|
- *     | |) | _|| _| | || .` | _| 
- *     |___/|___|_| |___|_|\_|___|          */
 // Dimensiones y parámetros
 #define WIDTH 1000
 #define HEIGHT 1000
@@ -107,7 +99,14 @@ void updateGridMPI() {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    int filas = HEIGHT / size;
+    if (size > HEIGHT) {
+        if (rank == 0) fprintf(stderr, "Error: demasiados procesos (%d) para HEIGHT=%d\n", size, HEIGHT);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    int base = HEIGHT / size;
+    int rem = HEIGHT % size;
+    int filas = base + (rank < rem ? 1 : 0);
 
     uint8_t localGrid[filas + 2][WIDTH];
     uint8_t newLocalGrid[filas + 2][WIDTH];
@@ -117,7 +116,9 @@ void updateGridMPI() {
     // Aqui si rank == 0, cada proceso recibe su parte de la rejilla global
     if (rank == 0) {
         for (int p = 1; p < size; p++) {
-            MPI_Send(&grid[p * filas][0], filas * WIDTH, MPI_UNSIGNED_CHAR, p, 0, MPI_COMM_WORLD);
+            int rows_p = base + (p < rem ? 1 : 0); // filas para proceso p teniendo en cuenta el resto
+            int offset = p * base + (p < rem ? p : rem); // desplazamiento en la rejilla global para proceso p
+            MPI_Send(&grid[offset][0], rows_p * WIDTH, MPI_UNSIGNED_CHAR, p, 0, MPI_COMM_WORLD);
         }
         for (int i = 0; i < filas; i++)
             for (int j = 0; j < WIDTH; j++)
@@ -136,7 +137,7 @@ void updateGridMPI() {
     MPI_Send(&localGrid[filas][0], WIDTH, MPI_UNSIGNED_CHAR, down, 2, MPI_COMM_WORLD); // enviar fila inferior a vecino de abajo
     MPI_Recv(&localGrid[0][0], WIDTH, MPI_UNSIGNED_CHAR, up, 2, MPI_COMM_WORLD, &status); // recibir fila superior de vecino de arriba
 
-    // 🔹 3. COMPUTO LOCAL → AQUÍ VA TU OPTIMIZACIÓN
+    // COMPUTO LOCAL Aqui se calcula el siguiente estado para cada celda del bloque local
 #if defined(_OPENMP)
 #pragma omp parallel for default(none) shared(localGrid, newLocalGrid) schedule(static)
 #endif
@@ -144,7 +145,7 @@ void updateGridMPI() {
 
         int j;
 
-        // 🔥 DESENROLLADO (igual que tu código)
+        //DESENROLLADO para procesar 2 celdas por iteracion
         for (j = 0; j < WIDTH - 1; j += 2) {
 
             int im1 = i - 1;
@@ -199,14 +200,17 @@ void updateGridMPI() {
         }
     }
 
-    // 🔹 4. Recolección
+    // Recolección de resultados: el proceso 0 recopila los bloques locales
     if (rank == 0) {
+        // copiar bloque local al inicio
         for (int i = 0; i < filas; i++)
             for (int j = 0; j < WIDTH; j++)
                 grid[i][j] = newLocalGrid[i + 1][j];
 
         for (int p = 1; p < size; p++) {
-            MPI_Recv(&grid[p * filas][0], filas * WIDTH, MPI_UNSIGNED_CHAR, p, 3, MPI_COMM_WORLD, &status);
+            int rows_p = base + (p < rem ? 1 : 0);
+            int offset = p * base + (p < rem ? p : rem);
+            MPI_Recv(&grid[offset][0], rows_p * WIDTH, MPI_UNSIGNED_CHAR, p, 3, MPI_COMM_WORLD, &status);
         }
     } else {
         MPI_Send(&newLocalGrid[1][0], filas * WIDTH, MPI_UNSIGNED_CHAR, 0, 3, MPI_COMM_WORLD);
