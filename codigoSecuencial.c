@@ -1,7 +1,3 @@
-/***    ___ _  _  ___ _   _   _ ___  ___ 
- *     |_ _| \| |/ __| | | | | |   \| __|
- *      | || .` | (__| |_| |_| | |) | _| 
- *     |___|_|\_|\___|____\___/|___/|___|   */
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -9,13 +5,10 @@
 #include <omp.h>
 
 
-/***    ___  ___ ___ ___ _  _ ___ 
- *     |   \| __| __|_ _| \| | __|
- *     | |) | _|| _| | || .` | _| 
- *     |___/|___|_| |___|_|\_|___|          */
+
 #define WIDTH 1000
 #define HEIGHT 1000
-#define ITERATION 500
+#define ITERATION 1000
 #define SPEED 500
 #define ALIVE '#'
 #define DEAD '.'

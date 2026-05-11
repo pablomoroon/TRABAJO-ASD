@@ -1,7 +1,4 @@
-/***    ___ _  _  ___ _   _   _ ___  ___ 
- *     |_ _| \| |/ __| | | | | |   \| __|
- *      | || .` | (__| |_| |_| | |) | _| 
- *     |___|_|\_|\___|____\___/|___/|___|   */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -13,14 +10,10 @@
 #endif
 
 
-/***    ___  ___ ___ ___ _  _ ___ 
- *     |   \| __| __|_ _| \| | __|
- *     | |) | _|| _| | || .` | _| 
- *     |___/|___|_| |___|_|\_|___|          */
 // Dimensiones y parámetros
 #define WIDTH 1000
 #define HEIGHT 1000
-#define ITERATION 100
+#define ITERATION 1000
 #define SPEED 500
 #define ALIVE '#'
 #define DEAD '.'
@@ -38,7 +31,7 @@ int generation = 0;
 void initGrid() {
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            grid[i][j] = rand() & 1; // faster equivalence a rand()%2
+            grid[i][j] = rand() & 1; 
         }
     }
 }

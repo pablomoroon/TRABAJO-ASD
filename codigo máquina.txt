@@ -1,0 +1,727 @@
+.file   "secuencial.c"
+        .text
+        .p2align 4
+        .globl  initGrid
+        .type   initGrid, @function
+initGrid:
+.LFB51:
+        .cfi_startproc
+        endbr64
+        pushq   %r12
+        .cfi_def_cfa_offset 16
+        .cfi_offset 12, -16
+        pushq   %rbp
+        .cfi_def_cfa_offset 24
+        .cfi_offset 6, -24
+        pushq   %rbx
+        .cfi_def_cfa_offset 32
+        .cfi_offset 3, -32
+        leaq    4000+grid(%rip), %rbx
+        leaq    4000000(%rbx), %rbp
+        .p2align 4,,10
+        .p2align 3
+.L2:
+        leaq    -4000(%rbx), %r12
+        .p2align 4,,10
+        .p2align 3
+.L3:
+        call    rand@PLT
+        addq    $4, %r12
+        movl    %eax, %edx
+        shrl    $31, %edx
+        addl    %edx, %eax
+        andl    $1, %eax
+        subl    %edx, %eax
+        movl    %eax, -4(%r12)
+        cmpq    %rbx, %r12
+        jne     .L3
+        leaq    4000(%r12), %rbx
+        cmpq    %rbp, %rbx
+        jne     .L2
+        popq    %rbx
+        .cfi_def_cfa_offset 24
+        popq    %rbp
+        .cfi_def_cfa_offset 16
+        popq    %r12
+        .cfi_def_cfa_offset 8
+        ret
+        .cfi_endproc
+.LFE51:
+        .size   initGrid, .-initGrid
+        .section        .rodata.str1.1,"aMS",@progbits,1
+.LC0:
+        .string "clear"
+        .text
+        .p2align 4
+        .globl  printGrid
+        .type   printGrid, @function
+printGrid:
+.LFB52:
+        .cfi_startproc
+        endbr64
+        pushq   %r12
+        .cfi_def_cfa_offset 16
+        .cfi_offset 12, -16
+        leaq    .LC0(%rip), %rdi
+        pushq   %rbp
+        .cfi_def_cfa_offset 24
+        .cfi_offset 6, -24
+        leaq    4000+grid(%rip), %rbp
+        pushq   %rbx
+        .cfi_def_cfa_offset 32
+        .cfi_offset 3, -32
+        leaq    4000000(%rbp), %r12
+        call    system@PLT
+        .p2align 4,,10
+        .p2align 3
+.L9:
+        leaq    -4000(%rbp), %rbx
+        .p2align 4,,10
+        .p2align 3
+.L14:
+        movl    (%rbx), %eax
+        testl   %eax, %eax
+        je      .L10
+        movl    $35, %edi
+        addq    $4, %rbx
+        call    putchar@PLT
+        cmpq    %rbp, %rbx
+        jne     .L14
+.L12:
+        movl    $10, %edi
+        addq    $4000, %rbp
+        call    putchar@PLT
+        cmpq    %r12, %rbp
+        jne     .L9
+        popq    %rbx
+        .cfi_remember_state
+        .cfi_def_cfa_offset 24
+        popq    %rbp
+        .cfi_def_cfa_offset 16
+        popq    %r12
+        .cfi_def_cfa_offset 8
+        ret
+        .p2align 4,,10
+        .p2align 3
+.L10:
+        .cfi_restore_state
+        movl    $46, %edi
+        addq    $4, %rbx
+        call    putchar@PLT
+        cmpq    %rbp, %rbx
+        jne     .L14
+        jmp     .L12
+        .cfi_endproc
+.LFE52:
+        .size   printGrid, .-printGrid
+        .p2align 4
+        .globl  countAliveNeighbours
+        .type   countAliveNeighbours, @function
+countAliveNeighbours:
+.LFB53:
+        .cfi_startproc
+        endbr64
+        movslq  %esi, %r9
+        pushq   %rbx
+        .cfi_def_cfa_offset 16
+        .cfi_offset 3, -16
+        leal    999(%r9), %eax
+        movslq  %eax, %rsi
+        cltd
+        imulq   $274877907, %rsi, %rsi
+        sarq    $38, %rsi
+        subl    %edx, %esi
+        imull   $1000, %esi, %edx
+        subl    %edx, %eax
+        movslq  %eax, %rsi
+        leal    1000(%r9), %eax
+        movslq  %eax, %rcx
+        cltd
+        imulq   $274877907, %rcx, %rcx
+        sarq    $38, %rcx
+        subl    %edx, %ecx
+        imull   $1000, %ecx, %edx
+        subl    %edx, %eax
+        movslq  %eax, %rcx
+        leal    1001(%r9), %eax
+        movslq  %eax, %r10
+        cltd
+        imulq   $274877907, %r10, %r10
+        sarq    $38, %r10
+        subl    %edx, %r10d
+        imull   $1000, %r10d, %edx
+        subl    %edx, %eax
+        leal    999(%rdi), %edx
+        movslq  %eax, %r10
+        movslq  %edx, %rax
+        movl    %edx, %r8d
+        imulq   $274877907, %rax, %rax
+        sarl    $31, %r8d
+        sarq    $38, %rax
+        subl    %r8d, %eax
+        imull   $1000, %eax, %r8d
+        movl    %edx, %eax
+        subl    %r8d, %eax
+        leaq    grid(%rip), %r8
+        cltq
+        imulq   $1000, %rax, %rax
+        leaq    (%rax,%rcx), %r11
+        leaq    (%rax,%rsi), %rdx
+        addq    %r10, %rax
+        movl    (%r8,%rdx,4), %edx
+        addl    (%r8,%r11,4), %edx
+        leal    1000(%rdi), %r11d
+        addl    (%r8,%rax,4), %edx
+        movslq  %r11d, %rax
+        movl    %r11d, %ebx
+        imulq   $274877907, %rax, %rax
+        sarl    $31, %ebx
+        sarq    $38, %rax
+        subl    %ebx, %eax
+        imull   $1000, %eax, %ebx
+        movl    %r11d, %eax
+        subl    %ebx, %eax
+        cltq
+        imulq   $1000, %rax, %rax
+        leaq    (%rax,%rsi), %r11
+        addl    (%r8,%r11,4), %edx
+        leaq    (%rax,%rcx), %r11
+        addq    %r10, %rax
+        addl    (%r8,%r11,4), %edx
+        leal    1001(%rdi), %r11d
+        addl    (%r8,%rax,4), %edx
+        movslq  %edi, %rdi
+        movl    %edx, %eax
+        imulq   $1000, %rdi, %rdi
+        movslq  %r11d, %rdx
+        movl    %r11d, %ebx
+        imulq   $274877907, %rdx, %rdx
+        sarl    $31, %ebx
+        addq    %r9, %rdi
+        sarq    $38, %rdx
+        subl    %ebx, %edx
+        imull   $1000, %edx, %ebx
+        movl    %r11d, %edx
+        subl    %ebx, %edx
+        popq    %rbx
+        .cfi_def_cfa_offset 8
+        movslq  %edx, %rdx
+        imulq   $1000, %rdx, %rdx
+        addq    %rdx, %rsi
+        addq    %rdx, %rcx
+        addq    %r10, %rdx
+        addl    (%r8,%rsi,4), %eax
+        addl    (%r8,%rcx,4), %eax
+        addl    (%r8,%rdx,4), %eax
+        subl    (%r8,%rdi,4), %eax
+        ret
+        .cfi_endproc
+.LFE53:
+        .size   countAliveNeighbours, .-countAliveNeighbours
+        .p2align 4
+        .globl  updateGrid
+        .type   updateGrid, @function
+updateGrid:
+.LFB54:
+        .cfi_startproc
+        endbr64
+        pushq   %r15
+        .cfi_def_cfa_offset 16
+        .cfi_offset 15, -16
+        pushq   %r14
+        .cfi_def_cfa_offset 24
+        .cfi_offset 14, -24
+        pushq   %r13
+        .cfi_def_cfa_offset 32
+        .cfi_offset 13, -32
+        pushq   %r12
+        .cfi_def_cfa_offset 40
+        .cfi_offset 12, -40
+        pushq   %rbp
+        .cfi_def_cfa_offset 48
+        .cfi_offset 6, -48
+        pushq   %rbx
+        .cfi_def_cfa_offset 56
+        .cfi_offset 3, -56
+        leaq    -3997696(%rsp), %r11
+        .cfi_def_cfa 11, 3997752
+.LPSRL0:
+        subq    $4096, %rsp
+        orq     $0, (%rsp)
+        cmpq    %r11, %rsp
+        jne     .LPSRL0
+        .cfi_def_cfa_register 7
+        subq    $2408, %rsp
+        .cfi_def_cfa_offset 4000160
+        movdqa  .LC4(%rip), %xmm2
+        pxor    %xmm5, %xmm5
+        movdqa  .LC2(%rip), %xmm13
+        movdqa  %xmm5, %xmm6
+        movl    $999, %r9d
+        movdqa  .LC3(%rip), %xmm12
+        movdqa  .LC5(%rip), %xmm11
+        pcmpgtd %xmm2, %xmm6
+        movdqa  .LC6(%rip), %xmm10
+        movdqa  .LC8(%rip), %xmm7
+        movdqa  .LC9(%rip), %xmm9
+        movq    %fs:40, %rax
+        movq    %rax, 4000088(%rsp)
+        xorl    %eax, %eax
+        leaq    80(%rsp), %rsi
+        leaq    grid(%rip), %rax
+        movq    %rsi, 48(%rsp)
+        movq    %rsi, 56(%rsp)
+        movq    %rax, 40(%rsp)
+        movl    $999, %eax
+.L19:
+        imulq   $274877907, %rax, %rax
+        leaq    grid(%rip), %rbx
+        movdqa  .LC1(%rip), %xmm1
+        xorl    %r15d, %r15d
+        shrq    $38, %rax
+        imull   $1000, %eax, %ecx
+        movl    %r9d, %eax
+        subl    %ecx, %eax
+        movl    %r9d, %ecx
+        addl    $1, %r9d
+        movslq  %eax, %rdi
+        leal    2(%rcx), %r10d
+        movl    %r9d, %eax
+        movl    %r9d, %r8d
+        movq    %r10, %rcx
+        imulq   $274877907, %rax, %rsi
+        movl    %r9d, 68(%rsp)
+        imulq   $274877907, %r10, %r10
+        movq    %rax, 72(%rsp)
+        imulq   $4000, %rdi, %rdi
+        shrq    $38, %rsi
+        shrq    $38, %r10
+        imull   $1000, %esi, %esi
+        imull   $1000, %r10d, %r10d
+        addq    %rbx, %rdi
+        subl    %esi, %r8d
+        subl    %r10d, %ecx
+        movslq  %r8d, %r8
+        movslq  %ecx, %rsi
+        imulq   $4000, %r8, %r8
+        imulq   $4000, %rsi, %rsi
+        addq    %rbx, %r8
+        addq    %rbx, %rsi
+        .p2align 4,,10
+        .p2align 3
+.L20:
+        movdqa  %xmm1, %xmm3
+        movdqa  %xmm5, %xmm4
+        movdqa  %xmm6, %xmm14
+        movdqa  %xmm3, %xmm0
+        movdqa  %xmm6, %xmm15
+        paddd   %xmm13, %xmm1
+        paddd   %xmm12, %xmm0
+        pcmpgtd %xmm0, %xmm4
+        pmuludq %xmm0, %xmm14
+        movdqa  %xmm0, %xmm8
+        pmuludq %xmm2, %xmm8
+        pmuludq %xmm2, %xmm4
+        paddq   %xmm14, %xmm4
+        movdqa  %xmm5, %xmm14
+        psllq   $32, %xmm4
+        paddq   %xmm4, %xmm8
+        movdqa  %xmm0, %xmm4
+        psrlq   $32, %xmm4
+        pcmpgtd %xmm4, %xmm14
+        pmuludq %xmm4, %xmm15
+        pmuludq %xmm2, %xmm4
+        pmuludq %xmm2, %xmm14
+        paddq   %xmm15, %xmm14
+        movdqa  %xmm6, %xmm15
+        psllq   $32, %xmm14
+        paddq   %xmm14, %xmm4
+        movdqa  %xmm6, %xmm14
+        shufps  $221, %xmm4, %xmm8
+        pshufd  $216, %xmm8, %xmm8
+        psrad   $6, %xmm8
+        movdqa  %xmm8, %xmm4
+        pslld   $5, %xmm4
+        psubd   %xmm8, %xmm4
+        pslld   $2, %xmm4
+        paddd   %xmm8, %xmm4
+        pslld   $3, %xmm4
+        psubd   %xmm4, %xmm0
+        pshufd  $85, %xmm0, %xmm4
+        movd    %xmm0, %r14d
+        movd    %xmm4, %ebp
+        movdqa  %xmm0, %xmm4
+        movslq  %r14d, %r14
+        punpckhdq       %xmm0, %xmm4
+        pshufd  $255, %xmm0, %xmm0
+        movslq  %ebp, %rbp
+        movd    %xmm0, %ecx
+        movdqa  %xmm3, %xmm0
+        movd    %xmm4, %r12d
+        paddd   %xmm11, %xmm0
+        movdqa  %xmm5, %xmm4
+        movslq  %ecx, %rcx
+        movslq  %r12d, %r12
+        pcmpgtd %xmm0, %xmm4
+        pmuludq %xmm0, %xmm14
+        movdqa  %xmm0, %xmm8
+        pmuludq %xmm2, %xmm8
+        pmuludq %xmm2, %xmm4
+        paddq   %xmm14, %xmm4
+        movdqa  %xmm5, %xmm14
+        psllq   $32, %xmm4
+        paddq   %xmm4, %xmm8
+        movdqa  %xmm0, %xmm4
+        psrlq   $32, %xmm4
+        pcmpgtd %xmm4, %xmm14
+        pmuludq %xmm4, %xmm15
+        pmuludq %xmm2, %xmm4
+        pmuludq %xmm2, %xmm14
+        paddq   %xmm15, %xmm14
+        psllq   $32, %xmm14
+        paddq   %xmm14, %xmm4
+        movdqa  %xmm6, %xmm14
+        shufps  $221, %xmm4, %xmm8
+        pshufd  $216, %xmm8, %xmm8
+        psrad   $6, %xmm8
+        movdqa  %xmm8, %xmm4
+        pslld   $5, %xmm4
+        psubd   %xmm8, %xmm4
+        pslld   $2, %xmm4
+        paddd   %xmm8, %xmm4
+        movdqa  %xmm6, %xmm8
+        pslld   $3, %xmm4
+        psubd   %xmm4, %xmm0
+        pshufd  $85, %xmm0, %xmm4
+        movd    %xmm0, %eax
+        movd    %xmm4, %r11d
+        movdqa  %xmm0, %xmm4
+        cltq
+        punpckhdq       %xmm0, %xmm4
+        pshufd  $255, %xmm0, %xmm0
+        movq    %rax, 32(%rsp)
+        movslq  %r11d, %r11
+        movd    %xmm0, %edx
+        movdqa  %xmm3, %xmm0
+        movdqa  %xmm5, %xmm3
+        movd    (%rdi,%r11,4), %xmm15
+        paddd   %xmm10, %xmm0
+        movd    %xmm4, %ebx
+        movslq  %edx, %rax
+        pcmpgtd %xmm0, %xmm3
+        pmuludq %xmm0, %xmm8
+        movdqa  %xmm0, %xmm4
+        movslq  %ebx, %rbx
+        pmuludq %xmm2, %xmm4
+        movq    %rax, 8(%rsp)
+        pmuludq %xmm2, %xmm3
+        paddq   %xmm8, %xmm3
+        movdqa  %xmm5, %xmm8
+        psllq   $32, %xmm3
+        paddq   %xmm3, %xmm4
+        movdqa  %xmm0, %xmm3
+        psrlq   $32, %xmm3
+        pcmpgtd %xmm3, %xmm8
+        pmuludq %xmm3, %xmm14
+        pmuludq %xmm2, %xmm3
+        pmuludq %xmm2, %xmm8
+        paddq   %xmm14, %xmm8
+        psllq   $32, %xmm8
+        paddq   %xmm8, %xmm3
+        shufps  $221, %xmm3, %xmm4
+        pshufd  $216, %xmm4, %xmm4
+        psrad   $6, %xmm4
+        movdqa  %xmm4, %xmm3
+        pslld   $5, %xmm3
+        psubd   %xmm4, %xmm3
+        pslld   $2, %xmm3
+        paddd   %xmm4, %xmm3
+        movd    (%rdi,%rbp,4), %xmm4
+        pslld   $3, %xmm3
+        psubd   %xmm3, %xmm0
+        pshufd  $85, %xmm0, %xmm3
+        movd    %xmm0, %r13d
+        movd    %xmm3, %r9d
+        movdqa  %xmm0, %xmm3
+        movslq  %r13d, %r13
+        movslq  %r9d, %rax
+        punpckhdq       %xmm0, %xmm3
+        pshufd  $255, %xmm0, %xmm0
+        movq    %rax, %rdx
+        movd    %xmm0, %eax
+        movd    %xmm3, %r10d
+        movd    (%rdi,%r12,4), %xmm3
+        movslq  %eax, %r9
+        movq    40(%rsp), %rax
+        movslq  %r10d, %r10
+        movdqa  (%rax,%r15), %xmm0
+        movq    8(%rsp), %rax
+        movaps  %xmm0, 16(%rsp)
+        movd    (%rdi,%rcx,4), %xmm0
+        punpckldq       %xmm0, %xmm3
+        movd    (%rdi,%r14,4), %xmm0
+        punpckldq       %xmm4, %xmm0
+        movd    (%rdi,%rbx,4), %xmm4
+        punpcklqdq      %xmm3, %xmm0
+        movd    (%rdi,%rax,4), %xmm3
+        movq    32(%rsp), %rax
+        punpckldq       %xmm3, %xmm4
+        movd    (%rdi,%rax,4), %xmm3
+        movq    8(%rsp), %rax
+        punpckldq       %xmm15, %xmm3
+        movd    (%rdi,%rdx,4), %xmm15
+        punpcklqdq      %xmm4, %xmm3
+        movd    (%rdi,%r10,4), %xmm4
+        paddd   %xmm3, %xmm0
+        movd    (%rdi,%r9,4), %xmm3
+        punpckldq       %xmm3, %xmm4
+        movd    (%rdi,%r13,4), %xmm3
+        punpckldq       %xmm15, %xmm3
+        movd    (%r8,%rbp,4), %xmm15
+        punpcklqdq      %xmm4, %xmm3
+        movd    (%r8,%r12,4), %xmm4
+        paddd   %xmm3, %xmm0
+        movd    (%r8,%rcx,4), %xmm3
+        punpckldq       %xmm3, %xmm4
+        movd    (%r8,%r14,4), %xmm3
+        punpckldq       %xmm15, %xmm3
+        movd    (%r8,%r11,4), %xmm15
+        punpcklqdq      %xmm4, %xmm3
+        movd    (%r8,%rbx,4), %xmm4
+        paddd   %xmm3, %xmm0
+        movd    (%r8,%rax,4), %xmm3
+        movq    32(%rsp), %rax
+        punpckldq       %xmm3, %xmm4
+        movd    (%r8,%rax,4), %xmm3
+        punpckldq       %xmm15, %xmm3
+        punpcklqdq      %xmm4, %xmm3
+        movd    (%r8,%r10,4), %xmm4
+        paddd   %xmm3, %xmm0
+        movd    (%r8,%r9,4), %xmm3
+        punpckldq       %xmm3, %xmm4
+        movd    (%r8,%r13,4), %xmm3
+        movd    (%r8,%rdx,4), %xmm15
+        movd    (%rsi,%rbp,4), %xmm8
+        punpckldq       %xmm15, %xmm3
+        punpcklqdq      %xmm4, %xmm3
+        movd    (%rsi,%r12,4), %xmm4
+        paddd   %xmm3, %xmm0
+        movd    (%rsi,%rcx,4), %xmm3
+        movq    8(%rsp), %rcx
+        punpckldq       %xmm3, %xmm4
+        movd    (%rsi,%r14,4), %xmm3
+        punpckldq       %xmm8, %xmm3
+        movd    (%rsi,%r11,4), %xmm8
+        punpcklqdq      %xmm4, %xmm3
+        movd    (%rsi,%rbx,4), %xmm4
+        paddd   %xmm3, %xmm0
+        movd    (%rsi,%rcx,4), %xmm3
+        punpckldq       %xmm3, %xmm4
+        movd    (%rsi,%rax,4), %xmm3
+        movq    48(%rsp), %rax
+        punpckldq       %xmm8, %xmm3
+        movd    (%rsi,%rdx,4), %xmm8
+        punpcklqdq      %xmm4, %xmm3
+        movd    (%rsi,%r10,4), %xmm4
+        paddd   %xmm3, %xmm0
+        movd    (%rsi,%r9,4), %xmm3
+        punpckldq       %xmm3, %xmm4
+        movd    (%rsi,%r13,4), %xmm3
+        punpckldq       %xmm8, %xmm3
+        punpcklqdq      %xmm4, %xmm3
+        movdqa  .LC7(%rip), %xmm4
+        paddd   %xmm3, %xmm0
+        psubd   16(%rsp), %xmm0
+        movdqa  16(%rsp), %xmm3
+        paddd   %xmm0, %xmm4
+        pcmpeqd .LC10(%rip), %xmm0
+        psubd   %xmm9, %xmm4
+        pcmpeqd %xmm7, %xmm3
+        pcmpgtd .LC11(%rip), %xmm4
+        pand    %xmm7, %xmm0
+        pandn   %xmm7, %xmm4
+        pand    %xmm3, %xmm4
+        pandn   %xmm0, %xmm3
+        por     %xmm4, %xmm3
+        movaps  %xmm3, (%rax,%r15)
+        addq    $16, %r15
+        cmpq    $4000, %r15
+        jne     .L20
+        movl    68(%rsp), %r9d
+        movq    72(%rsp), %rax
+        addq    $4000, 40(%rsp)
+        addq    $4000, 48(%rsp)
+        cmpl    $1999, %r9d
+        jne     .L19
+        movq    56(%rsp), %rsi
+        movl    $4000000, %edx
+        leaq    grid(%rip), %rdi
+        call    memcpy@PLT
+        movq    4000088(%rsp), %rax
+        subq    %fs:40, %rax
+        jne     .L29
+        addq    $4000104, %rsp
+        .cfi_remember_state
+        .cfi_def_cfa_offset 56
+        popq    %rbx
+        .cfi_def_cfa_offset 48
+        popq    %rbp
+        .cfi_def_cfa_offset 40
+        popq    %r12
+        .cfi_def_cfa_offset 32
+        popq    %r13
+        .cfi_def_cfa_offset 24
+        popq    %r14
+        .cfi_def_cfa_offset 16
+        popq    %r15
+        .cfi_def_cfa_offset 8
+        ret
+.L29:
+        .cfi_restore_state
+        call    __stack_chk_fail@PLT
+        .cfi_endproc
+.LFE54:
+        .size   updateGrid, .-updateGrid
+        .section        .rodata.str1.1
+.LC12:
+        .string "Tiempo OpenMP: %f segundos\n"
+        .section        .text.startup,"ax",@progbits
+        .p2align 4
+        .globl  main
+        .type   main, @function
+main:
+.LFB55:
+        .cfi_startproc
+        endbr64
+        pushq   %rbx
+        .cfi_def_cfa_offset 16
+        .cfi_offset 3, -16
+        movl    $42, %edi
+        movl    $1000, %ebx
+        subq    $16, %rsp
+        .cfi_def_cfa_offset 32
+        call    srand@PLT
+        xorl    %eax, %eax
+        call    initGrid
+        call    omp_get_wtime@PLT
+        movsd   %xmm0, 8(%rsp)
+        .p2align 4,,10
+        .p2align 3
+.L31:
+        xorl    %eax, %eax
+        call    updateGrid
+        subl    $1, %ebx
+        jne     .L31
+        call    omp_get_wtime@PLT
+        subsd   8(%rsp), %xmm0
+        movl    $2, %edi
+        leaq    .LC12(%rip), %rsi
+        movl    $1, %eax
+        call    __printf_chk@PLT
+        addq    $16, %rsp
+        .cfi_def_cfa_offset 16
+        xorl    %eax, %eax
+        popq    %rbx
+        .cfi_def_cfa_offset 8
+        ret
+        .cfi_endproc
+.LFE55:
+        .size   main, .-main
+        .globl  generation
+        .bss
+        .align 4
+        .type   generation, @object
+        .size   generation, 4
+generation:
+        .zero   4
+        .globl  grid
+        .align 32
+        .type   grid, @object
+        .size   grid, 4000000
+grid:
+        .zero   4000000
+        .section        .rodata.cst16,"aM",@progbits,16
+        .align 16
+.LC1:
+        .long   0
+        .long   1
+        .long   2
+        .long   3
+        .align 16
+.LC2:
+        .long   4
+        .long   4
+        .long   4
+        .long   4
+        .align 16
+.LC3:
+        .long   999
+        .long   999
+        .long   999
+        .long   999
+        .align 16
+.LC4:
+        .long   274877907
+        .long   274877907
+        .long   274877907
+        .long   274877907
+        .align 16
+.LC5:
+        .long   1000
+        .long   1000
+        .long   1000
+        .long   1000
+        .align 16
+.LC6:
+        .long   1001
+        .long   1001
+        .long   1001
+        .long   1001
+        .align 16
+.LC7:
+        .long   -2
+        .long   -2
+        .long   -2
+        .long   -2
+        .align 16
+.LC8:
+        .long   1
+        .long   1
+        .long   1
+        .long   1
+        .align 16
+.LC9:
+        .long   -2147483648
+        .long   -2147483648
+        .long   -2147483648
+        .long   -2147483648
+        .align 16
+.LC10:
+        .long   3
+        .long   3
+        .long   3
+        .long   3
+        .align 16
+.LC11:
+        .long   -2147483647
+        .long   -2147483647
+        .long   -2147483647
+        .long   -2147483647
+        .ident  "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0"
+        .section        .note.GNU-stack,"",@progbits
+        .section        .note.gnu.property,"a"
+        .align 8
+        .long   1f - 0f
+        .long   4f - 1f
+        .long   5
+0:
+        .string "GNU"
+1:
+        .align 8
+        .long   0xc0000002
+        .long   3f - 2f
+2:
+        .long   0x3
+3:
+        .align 8
+4:

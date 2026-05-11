@@ -13,7 +13,7 @@
 // Dimensiones y parámetros
 #define WIDTH 1000
 #define HEIGHT 1000
-#define ITERATION 500
+#define ITERATION 1000
 #define SPEED 500
 #define ALIVE '#'
 #define DEAD '.'
@@ -116,8 +116,8 @@ void updateGridMPI() {
     // Aqui si rank == 0, cada proceso recibe su parte de la rejilla global
     if (rank == 0) {
         for (int p = 1; p < size; p++) {
-            int rows_p = base + (p < rem ? 1 : 0); // filas para proceso p teniendo en cuenta el resto
-            int offset = p * base + (p < rem ? p : rem); // desplazamiento en la rejilla global para proceso p
+            int rows_p = base + (p < rem ? 1 : 0); 
+            int offset = p * base + (p < rem ? p : rem); 
             MPI_Send(&grid[offset][0], rows_p * WIDTH, MPI_UNSIGNED_CHAR, p, 0, MPI_COMM_WORLD);
         }
         for (int i = 0; i < filas; i++)
@@ -127,17 +127,17 @@ void updateGridMPI() {
         MPI_Recv(&localGrid[1][0], filas * WIDTH, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, &status);
     }
 
-    // Aqui se hace el intercambio de filas frontera entre procesos 
-    int up = (rank == 0) ? size - 1 : rank - 1; // vecino de arriba 
-    int down = (rank == size - 1) ? 0 : rank + 1; // vecino de abajo 
 
-    MPI_Send(&localGrid[1][0], WIDTH, MPI_UNSIGNED_CHAR, up, 1, MPI_COMM_WORLD); // enviar fila superior a vecino de arriba
-    MPI_Recv(&localGrid[filas + 1][0], WIDTH, MPI_UNSIGNED_CHAR, down, 1, MPI_COMM_WORLD, &status); // recibir fila inferior de vecino de abajo
+    int up = (rank == 0) ? size - 1 : rank - 1;  
+    int down = (rank == size - 1) ? 0 : rank + 1; 
 
-    MPI_Send(&localGrid[filas][0], WIDTH, MPI_UNSIGNED_CHAR, down, 2, MPI_COMM_WORLD); // enviar fila inferior a vecino de abajo
-    MPI_Recv(&localGrid[0][0], WIDTH, MPI_UNSIGNED_CHAR, up, 2, MPI_COMM_WORLD, &status); // recibir fila superior de vecino de arriba
+    MPI_Send(&localGrid[1][0], WIDTH, MPI_UNSIGNED_CHAR, up, 1, MPI_COMM_WORLD); 
+    MPI_Recv(&localGrid[filas + 1][0], WIDTH, MPI_UNSIGNED_CHAR, down, 1, MPI_COMM_WORLD, &status); 
 
-    // COMPUTO LOCAL Aqui se calcula el siguiente estado para cada celda del bloque local
+    MPI_Send(&localGrid[filas][0], WIDTH, MPI_UNSIGNED_CHAR, down, 2, MPI_COMM_WORLD); o
+    MPI_Recv(&localGrid[0][0], WIDTH, MPI_UNSIGNED_CHAR, up, 2, MPI_COMM_WORLD, &status); 
+
+    
 #if defined(_OPENMP)
 #pragma omp parallel for default(none) shared(localGrid, newLocalGrid, filas) schedule(static)
 #endif
@@ -202,7 +202,6 @@ void updateGridMPI() {
 
     // Recolección de resultados: el proceso 0 recopila los bloques locales
     if (rank == 0) {
-        // copiar bloque local al inicio
         for (int i = 0; i < filas; i++)
             for (int j = 0; j < WIDTH; j++)
                 grid[i][j] = newLocalGrid[i + 1][j];
